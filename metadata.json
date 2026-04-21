@@ -1,0 +1,5 @@
+{
+  "name": "AI Workbench",
+  "description": "A local workbench to manage and preview AI-generated frontend projects.",
+  "requestFramePermissions": []
+}

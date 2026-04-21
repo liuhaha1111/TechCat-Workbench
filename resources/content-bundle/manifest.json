@@ -1,0 +1,9 @@
+{
+  "version": "2026.04.04.1",
+  "publishedAt": "2026-04-04T00:00:00.000Z",
+  "minAppVersion": "0.2.0",
+  "maxAppVersion": "0.2.9",
+  "packageUrl": "builtin://content-bundle",
+  "sha256": "built-in",
+  "notes": "Built-in desktop content bundle"
+}

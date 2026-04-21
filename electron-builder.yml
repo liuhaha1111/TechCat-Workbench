@@ -1,0 +1,30 @@
+appId: com.aiworkbench.desktop
+productName: TechCat Workbench
+directories:
+  output: release
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - resources/**/*
+  - package.json
+extraMetadata:
+  main: dist-electron/main.cjs
+asarUnpack:
+  - node_modules/better-sqlite3/**/*
+publish:
+  provider: github
+  owner: liuhaha1111
+  repo: TechCat-Workbench
+win:
+  signAndEditExecutable: false
+  target:
+    - target: nsis
+      arch:
+        - x64
+artifactName: TechCat-Workbench-${version}-${arch}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true

@@ -1,0 +1,92 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fira+Code:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap");
+@import "tailwindcss";
+
+:root {
+  --wb-primary: #334155;
+  --wb-secondary: #1e293b;
+  --wb-accent: #22c55e;
+  --wb-bg: #0f172a;
+  --wb-text: #f8fafc;
+  --wb-bg-radial-a: rgb(51 65 85 / 36%);
+  --wb-bg-radial-b: rgb(34 197 94 / 18%);
+  --wb-bg-gradient-start: #0f172a;
+  --wb-bg-gradient-end: #020617;
+  --wb-button-border: rgb(255 255 255 / 0.15);
+  --wb-button-bg: rgb(30 41 59 / 0.82);
+  --wb-button-bg-hover: rgb(51 65 85 / 0.95);
+  --wb-button-text: #f8fafc;
+  --wb-success-text: #bbf7d0;
+  --wb-danger-text: #fecdd3;
+}
+
+html[data-theme="light"] {
+  --wb-primary: #1e293b;
+  --wb-secondary: #334155;
+  --wb-accent: #22c55e;
+  --wb-bg: #f8fafc;
+  --wb-text: #0f172a;
+  --wb-bg-radial-a: rgb(186 230 253 / 0.6);
+  --wb-bg-radial-b: rgb(187 247 208 / 0.45);
+  --wb-bg-gradient-start: #f8fafc;
+  --wb-bg-gradient-end: #eff6ff;
+  --wb-button-border: rgb(203 213 225 / 0.9);
+  --wb-button-bg: #ffffff;
+  --wb-button-bg-hover: #f1f5f9;
+  --wb-button-text: #334155;
+  --wb-success-text: #047857;
+  --wb-danger-text: #be123c;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "DM Sans", sans-serif;
+  background:
+    radial-gradient(circle at 8% 12%, var(--wb-bg-radial-a), transparent 34%),
+    radial-gradient(circle at 84% 16%, var(--wb-bg-radial-b), transparent 28%),
+    linear-gradient(180deg, var(--wb-bg-gradient-start) 0%, var(--wb-bg-gradient-end) 100%);
+  color: var(--wb-text);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-heading {
+  font-family: "Space Grotesk", sans-serif;
+}
+
+code,
+pre,
+.font-mono {
+  font-family: "Fira Code", monospace;
+}
+
+::selection {
+  background: rgb(34 197 94 / 30%);
+  color: #ecfdf5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
