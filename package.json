@@ -16,8 +16,9 @@
     "test:watch": "vitest",
     "electron:main": "set NODE_OPTIONS=--import tsx && electron electron/main.ts",
     "electron:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:3000 && set ELECTRON_RENDERER_URL=http://127.0.0.1:3000 && set NODE_OPTIONS=--import tsx && electron electron/main.ts\"",
+    "electron:rebuild": "electron-builder install-app-deps",
     "electron:bundle": "npm run build && node ./node_modules/esbuild/bin/esbuild electron/main.ts electron/preload.ts --bundle --platform=node --format=cjs --outdir=dist-electron --out-extension:.js=.cjs --external:electron --external:better-sqlite3",
-    "electron:build": "npm run electron:bundle && electron-builder --config electron-builder.yml --win nsis",
+    "electron:build": "npm run electron:bundle && npm run electron:rebuild && electron-builder --config electron-builder.yml --win nsis",
     "desktop:dist": "npm run electron:build",
     "desktop:release": "npm run electron:build && node ./scripts/buildPortableRelease.mjs"
   },

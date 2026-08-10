@@ -2,6 +2,8 @@ appId: com.aiworkbench.desktop
 productName: TechCat Workbench
 directories:
   output: release
+npmRebuild: true
+nativeRebuilder: sequential
 files:
   - dist/**/*
   - dist-electron/**/*
