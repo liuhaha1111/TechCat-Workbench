@@ -3,7 +3,16 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { ImportService } from "../../../../server/infrastructure/import/importService";
+import {
+  ImportService,
+  sanitizeImportPath,
+} from "../../../../server/infrastructure/import/importService";
+
+describe("sanitizeImportPath", () => {
+  it("rejects path traversal", () => {
+    expect(() => sanitizeImportPath("../evil/file.ts")).toThrow("path traversal");
+  });
+});
 
 describe("ImportService", () => {
   let tempDir: string | null = null;

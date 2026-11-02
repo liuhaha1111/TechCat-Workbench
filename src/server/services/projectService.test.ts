@@ -255,7 +255,11 @@ describe("ProjectService", () => {
   });
 
   it("imports a folder into a managed child directory under the deployment root", async () => {
-    spawnMock.mockImplementation(() => createMockProcess());
+    spawnMock.mockImplementation((_command: string, args: string[]) =>
+      args[0] === "install"
+        ? createMockProcess({ autoExit: true })
+        : createMockProcess()
+    );
 
     tempDir = mkdtempSync(path.join(os.tmpdir(), "aiwb-project-service-"));
     const dbPath = path.join(tempDir, "workbench.db");
@@ -737,7 +741,11 @@ describe("ProjectService", () => {
   });
 
   it("hydrates missing adapter metadata from workspace on start", async () => {
-    spawnMock.mockImplementation(() => createMockProcess());
+    spawnMock.mockImplementation((_command: string, args: string[]) =>
+      args[0] === "install"
+        ? createMockProcess({ autoExit: true })
+        : createMockProcess()
+    );
 
     tempDir = mkdtempSync(path.join(os.tmpdir(), "aiwb-project-service-"));
     const dbPath = path.join(tempDir, "workbench.db");
@@ -1046,7 +1054,11 @@ describe("ProjectService", () => {
   });
 
   it("logs the local install command before spawning it", async () => {
-    spawnMock.mockImplementation(() => createMockProcess());
+    spawnMock.mockImplementation((_command: string, args: string[]) =>
+      args[0] === "install"
+        ? createMockProcess({ autoExit: true })
+        : createMockProcess()
+    );
 
     tempDir = mkdtempSync(path.join(os.tmpdir(), "aiwb-project-service-"));
     const dbPath = path.join(tempDir, "workbench.db");
@@ -1069,7 +1081,11 @@ describe("ProjectService", () => {
   });
 
   it("uses platform-safe spawn options for local runtime commands", async () => {
-    spawnMock.mockImplementation(() => createMockProcess());
+    spawnMock.mockImplementation((_command: string, args: string[]) =>
+      args[0] === "install"
+        ? createMockProcess({ autoExit: true })
+        : createMockProcess()
+    );
 
     tempDir = mkdtempSync(path.join(os.tmpdir(), "aiwb-project-service-"));
     const dbPath = path.join(tempDir, "workbench.db");
