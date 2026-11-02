@@ -22,11 +22,20 @@ await fs.access(installerPath);
 
 const zip = new AdmZip();
 
+// 运行时状态目录绝不进发布包。
+// 应用启动时会在可执行文件同级写 .sandbox/workbench.db；只要有人在打包前
+// 从 release/win-unpacked 跑过一次应用，这个本地数据库就会被打进 ZIP 发给用户。
+const EXCLUDED_ENTRY_NAMES = new Set([".sandbox", ".native-cache"]);
+
 async function addDirectoryEntries(currentDir, relativeDir = "") {
   const entries = await fs.readdir(currentDir, { withFileTypes: true });
   entries.sort((left, right) => left.name.localeCompare(right.name));
 
   for (const entry of entries) {
+    if (EXCLUDED_ENTRY_NAMES.has(entry.name)) {
+      continue;
+    }
+
     const fullPath = path.join(currentDir, entry.name);
     const relativePath = relativeDir ? `${relativeDir}/${entry.name}` : entry.name;
 

@@ -54,6 +54,30 @@ npm run desktop:release
 
 Packaged output is written to `frontend/release/`.
 
+### Native module ABI
+
+`better-sqlite3` is a native addon: the compiled `.node` binary is bound to one specific
+Node/Electron ABI (`NODE_MODULE_VERSION`). `npm install` runs `prebuild-install`, which picks
+the binary matching **the local Node runtime**, not Electron. Packaging that binary into
+Electron makes the app fail at startup with:
+
+```
+The module '...better_sqlite3.node' was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires NODE_MODULE_VERSION 145.
+```
+
+`npm run electron:build` therefore does two things that must not be removed:
+
+- `electron:rebuild` runs `scripts/ensureElectronNativeDeps.mjs`, which asks the Electron
+  binary itself for its ABI, downloads the matching official prebuilt binary, writes it into
+  `node_modules/better-sqlite3/build/Release/`, and dlopen-verifies it. No C++ toolchain needed.
+- `electron:verify-native` runs `scripts/verifyPackagedNativeDeps.mjs` against `release/win-unpacked`
+  after packaging, so a broken artifact fails the build instead of reaching users.
+
+`npmRebuild` is deliberately `false` in `electron-builder.yml`: electron-builder's own rebuild
+falls back to `node-gyp` when no prebuilt binary matches, and on a machine without MSVC that
+fallback fails silently, leaving the Node-ABI binary in the package.
+
 ## GitHub Releases Distribution
 
 ### Public Source of Truth
@@ -116,6 +140,8 @@ Windows SmartScreen may still warn on both the installer and the portable execut
 - `npm run dev` - Vite renderer only
 - `npm run electron:dev` - desktop development workflow
 - `npm run electron:bundle` - build renderer assets plus bundled Electron main/preload
+- `npm run electron:rebuild` - fetch the Electron-ABI `better-sqlite3` binary and verify it loads
+- `npm run electron:verify-native` - check the packaged app's native module loads under its Electron
 - `npm run electron:build` - Windows installer build via Electron Builder
 - `npm run desktop:dist` - compatibility alias for `electron:build`
 - `npm run desktop:release` - build installer, portable ZIP, and release checksum assets

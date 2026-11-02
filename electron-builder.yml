@@ -2,8 +2,11 @@ appId: com.aiworkbench.desktop
 productName: TechCat Workbench
 directories:
   output: release
-npmRebuild: true
-nativeRebuilder: sequential
+# 原生依赖由 scripts/ensureElectronNativeDeps.mjs 确定性地按 Electron ABI 下载并校验。
+# 这里必须关掉 electron-builder 自带的 rebuild：它会再跑一次 @electron/rebuild，
+# 一旦匹配不到预编译包就回落 node-gyp，构建机没有 MSVC 时会静默失败，
+# 把 Node ABI 的旧二进制原样打进包里（v1.0.0 便携版事故的直接成因）。
+npmRebuild: false
 files:
   - dist/**/*
   - dist-electron/**/*
