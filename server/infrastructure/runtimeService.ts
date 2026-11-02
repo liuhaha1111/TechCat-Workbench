@@ -10,6 +10,7 @@ import {
   getProjectDevCommand,
   getProjectInstallCommand,
   shouldInstallDependencies,
+  type RuntimeCommand,
 } from "../lib/localRuntime";
 import { inspectProjectDirectory, type ProjectInspectionReport } from "../lib/projectInspector";
 import type { LogStream, ProjectStatus } from "../types";
@@ -24,6 +25,9 @@ interface RunnerState {
 }
 
 const execFileAsync = promisify(execFile);
+
+/** Sentinel exit code used when an install child is killed by a user-initiated stop. */
+const INSTALL_STOPPED_SENTINEL = -1;
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -181,6 +185,53 @@ export class RuntimeService implements ProjectRuntimeController {
     this.reconcileRuntimeState();
   }
 
+  private runInstallProcess(
+    projectId: string,
+    cwd: string,
+    command: RuntimeCommand
+  ): Promise<number> {
+    return new Promise<number>((resolve, reject) => {
+      let child: ReturnType<typeof spawn>;
+      try {
+        child = spawn(command.command, command.args, {
+          cwd,
+          shell: process.platform === "win32",
+          stdio: ["ignore", "pipe", "pipe"],
+        });
+      } catch (error) {
+        reject(error);
+        return;
+      }
+
+      const runner: RunnerState = {
+        process: child,
+        wasStopped: false,
+        exitDisposition: null,
+        runtimePort: null,
+      };
+      this.runners.set(projectId, runner);
+      this.attachProcessLogs(projectId, child);
+
+      child.on("error", (error) => {
+        if (this.runners.get(projectId) === runner) {
+          this.runners.delete(projectId);
+        }
+        reject(error);
+      });
+
+      child.on("exit", (code) => {
+        if (this.runners.get(projectId) === runner) {
+          this.runners.delete(projectId);
+        }
+        if (runner.exitDisposition === "stopped") {
+          resolve(INSTALL_STOPPED_SENTINEL);
+          return;
+        }
+        resolve(code ?? 1);
+      });
+    });
+  }
+
   async startProject(projectId: string): Promise<void> {
     const project = this.repository.getProject(projectId);
     if (!project) {
@@ -244,45 +295,44 @@ export class RuntimeService implements ProjectRuntimeController {
       "system",
       `Running local install command: ${formatRuntimeCommand(installCommand)}`
     );
-    let installProcess: ReturnType<typeof spawn>;
+    let installCode: number;
     try {
-      installProcess = spawn(installCommand.command, installCommand.args, {
-        cwd: projectRootPath,
-        shell: process.platform === "win32",
-        stdio: ["ignore", "pipe", "pipe"],
-      });
+      installCode = await this.runInstallProcess(projectId, projectRootPath, installCommand);
     } catch (error) {
       const message = formatProjectRunError("Install process failed to start", error);
       this.failProjectRun(projectId, message);
       throw error;
     }
 
-    const runner: RunnerState = {
-      process: installProcess,
-      wasStopped: false,
-      exitDisposition: null,
-      runtimePort: null,
-    };
-    this.runners.set(projectId, runner);
-    this.attachProcessLogs(projectId, installProcess);
+    if (installCode === INSTALL_STOPPED_SENTINEL) {
+      this.updateProject(projectId, {
+        status: "stopped",
+        runtimePid: null,
+        runtimePort: null,
+        previewUrl: null,
+        lastError: null,
+        updatedAt: nowIso(),
+      });
+      return;
+    }
 
-    installProcess.on("error", (error) => {
-      if (this.runners.get(projectId) === runner) {
-        this.runners.delete(projectId);
+    if (installCode !== 0) {
+      const legacyCommand = getProjectInstallCommand(inspection, process.platform, {
+        legacyPeerDeps: true,
+      });
+      this.appendLog(
+        projectId,
+        "system",
+        `Install failed (exit ${installCode}); retrying with relaxed peer dependencies: ${formatRuntimeCommand(legacyCommand)}`
+      );
+      try {
+        installCode = await this.runInstallProcess(projectId, projectRootPath, legacyCommand);
+      } catch (error) {
+        const message = formatProjectRunError("Install (legacy) process failed to start", error);
+        this.failProjectRun(projectId, message);
+        throw error;
       }
-      this.failProjectRun(projectId, `Install process failed: ${error.message}`);
-    });
-
-    installProcess.on("exit", (code, signal) => {
-      if (this.runners.get(projectId) === runner) {
-        this.runners.delete(projectId);
-      }
-
-      if (runner.exitDisposition === "error") {
-        return;
-      }
-
-      if (runner.exitDisposition === "stopped") {
+      if (installCode === INSTALL_STOPPED_SENTINEL) {
         this.updateProject(projectId, {
           status: "stopped",
           runtimePid: null,
@@ -293,22 +343,19 @@ export class RuntimeService implements ProjectRuntimeController {
         });
         return;
       }
+    }
 
-      if (code === 0) {
-        void this.startRuntimeProcess(projectId, inspection).catch((error) => {
-          this.failProjectRun(
-            projectId,
-            formatProjectRunError("Failed to prepare local runtime", error)
-          );
-        });
-        return;
-      }
+    if (installCode !== 0) {
+      this.failProjectRun(projectId, `Install process exited with code ${installCode}`);
+      return;
+    }
 
-      const exitMessage =
-        code !== null
-          ? `Install process exited with code ${code}`
-          : `Install process terminated by signal ${signal ?? "unknown"}`;
-      this.failProjectRun(projectId, exitMessage);
+    this.appendLog(projectId, "system", "Dependencies installed; starting runtime");
+    await this.startRuntimeProcess(projectId, inspection).catch((error) => {
+      this.failProjectRun(
+        projectId,
+        formatProjectRunError("Failed to prepare local runtime", error)
+      );
     });
   }
 

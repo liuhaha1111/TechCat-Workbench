@@ -80,6 +80,28 @@ describe("localRuntime", () => {
     });
   });
 
+  it("adds --legacy-peer-deps for npm when relaxing peer conflicts", () => {
+    expect(getInstallCommand("npm", "linux", { legacyPeerDeps: true })).toEqual({
+      command: "npm",
+      args: ["install", "--legacy-peer-deps"],
+    });
+  });
+
+  it("adds --no-strict-peer-dependencies for pnpm when relaxing peer conflicts", () => {
+    expect(getInstallCommand("pnpm", "linux", { legacyPeerDeps: true })).toEqual({
+      command: "pnpm",
+      args: ["install", "--frozen-lockfile", "--no-strict-peer-dependencies"],
+    });
+  });
+
+  it("forwards the legacy-peer-deps option through getProjectInstallCommand", () => {
+    const project = createRuntimeProject({ packageManager: "npm" });
+    expect(getProjectInstallCommand(project, "linux", { legacyPeerDeps: true })).toEqual({
+      command: "npm",
+      args: ["install", "--legacy-peer-deps"],
+    });
+  });
+
   it("builds npm dev args with explicit host and port", () => {
     expect(getDevArgs("npm", 43210)).toEqual([
       "run",

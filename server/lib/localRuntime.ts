@@ -92,24 +92,37 @@ export function getExecutableForPackageManager(
   return platform === "win32" ? `${packageManager}.cmd` : packageManager;
 }
 
-export function getInstallArgs(packageManager: PackageManager): string[] {
+export interface InstallArgsOptions {
+  /** Relax peer-dependency enforcement so imports of arbitrary/legacy projects don't fail on peer conflicts. */
+  legacyPeerDeps?: boolean;
+}
+
+export function getInstallArgs(
+  packageManager: PackageManager,
+  options: InstallArgsOptions = {}
+): string[] {
+  const { legacyPeerDeps = false } = options;
   switch (packageManager) {
     case "pnpm":
-      return ["install", "--frozen-lockfile"];
+      return legacyPeerDeps
+        ? ["install", "--frozen-lockfile", "--no-strict-peer-dependencies"]
+        : ["install", "--frozen-lockfile"];
     case "yarn":
+      // Yarn (classic) does not fail on peer-dep conflicts by default, keep frozen lockfile.
       return ["install", "--frozen-lockfile"];
     default:
-      return ["install"];
+      return legacyPeerDeps ? ["install", "--legacy-peer-deps"] : ["install"];
   }
 }
 
 export function getInstallCommand(
   packageManager: PackageManager,
-  platform: NodeJS.Platform = process.platform
+  platform: NodeJS.Platform = process.platform,
+  options: InstallArgsOptions = {}
 ): RuntimeCommand {
   return {
     command: getExecutableForPackageManager(packageManager, platform),
-    args: getInstallArgs(packageManager),
+    args: getInstallArgs(packageManager, options),
   };
 }
 
@@ -175,13 +188,14 @@ export function shouldInstallDependencies(project: RuntimeProjectAdapter): boole
 
 export function getProjectInstallCommand(
   project: RuntimeProjectAdapter,
-  platform: NodeJS.Platform = process.platform
+  platform: NodeJS.Platform = process.platform,
+  options: InstallArgsOptions = {}
 ): RuntimeCommand | null {
   if (!shouldInstallDependencies(project)) {
     return null;
   }
 
-  return getInstallCommand(getRequiredPackageManager(project), platform);
+  return getInstallCommand(getRequiredPackageManager(project), platform, options);
 }
 
 function getProjectType(project: RuntimeProjectAdapter): ProjectType | null {
